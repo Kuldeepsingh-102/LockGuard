@@ -1,0 +1,42 @@
+[
+    {
+        "merged": "com.lockguard.app-debug-75:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.lockguard.app-main-77:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/drawable_ic_shield_logo.xml.flat",
+        "source": "com.lockguard.app-main-77:/drawable/ic_shield_logo.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/xml_file_paths.xml.flat",
+        "source": "com.lockguard.app-main-77:/xml/file_paths.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/xml_device_admin.xml.flat",
+        "source": "com.lockguard.app-main-77:/xml/device_admin.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/drawable_ic_launcher_round.xml.flat",
+        "source": "com.lockguard.app-main-77:/drawable/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.lockguard.app-main-77:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/drawable_ic_launcher.xml.flat",
+        "source": "com.lockguard.app-main-77:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.lockguard.app-main-77:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.lockguard.app-main-77:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.lockguard.app-debug-75:/xml_data_extraction_rules.xml.flat",
+        "source": "com.lockguard.app-main-77:/xml/data_extraction_rules.xml"
+    }
+]

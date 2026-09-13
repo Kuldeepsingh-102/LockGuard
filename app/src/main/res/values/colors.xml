@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Deep Navy / Black Palette -->
+    <color name="navy_950">#070B14</color>
+    <color name="navy_900">#0B1120</color>
+    <color name="navy_800">#131D36</color>
+    <color name="navy_700">#1E2C4F</color>
+    <color name="navy_600">#2E4273</color>
+
+    <!-- Electric Blue Accent -->
+    <color name="electric_blue">#0066FF</color>
+    <color name="electric_blue_light">#38BDF8</color>
+    <color name="electric_blue_dark">#0044B3</color>
+    <color name="electric_cyan">#00F0FF</color>
+
+    <!-- Security & Status Colors -->
+    <color name="status_green">#10B981</color>
+    <color name="status_green_dark">#059669</color>
+    <color name="status_amber">#F59E0B</color>
+    <color name="status_red">#EF4444</color>
+    <color name="status_red_dark">#DC2626</color>
+
+    <!-- Neutrals -->
+    <color name="surface_dark">#0B1120</color>
+    <color name="surface_card_dark">#131D36</color>
+    <color name="text_primary_dark">#F8FAFC</color>
+    <color name="text_secondary_dark">#94A3B8</color>
+
+    <color name="surface_light">#F8FAFC</color>
+    <color name="surface_card_light">#FFFFFF</color>
+    <color name="text_primary_light">#0F172A</color>
+    <color name="text_secondary_light">#64748B</color>
+</resources>
