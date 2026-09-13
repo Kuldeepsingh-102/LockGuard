@@ -11,6 +11,10 @@
     <string name="notification_channel_description">Discreet security notifications when unauthorized access attempts are detected.</string>
     <string name="notification_alert_title">Security Alert</string>
     <string name="notification_alert_body">An unauthorized authentication attempt was detected.</string>
+    <string name="notification_alert_body_extended">An unauthorized authentication attempt was detected. Tap Capture photo to securely save front-camera evidence (Android requires a visible app screen for camera access).</string>
+    <string name="notification_capture_action">Capture photo</string>
+    <string name="lock_screen_no_photo_title">Photo pending / restricted</string>
+    <string name="lock_screen_no_photo_body">Android blocks silent camera use while the phone is locked. LockGuard logged this attempt and will capture a photo via the security notification or right after unlock.</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">LockGuard Dashboard</string>

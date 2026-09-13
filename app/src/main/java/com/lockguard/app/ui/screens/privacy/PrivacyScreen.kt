@@ -115,7 +115,7 @@ fun PrivacyScreen(
                 // Pillar 4: Android OS Background Camera Rules
                 PrivacyPillarCard(
                     title = "Android Background Camera Compliance",
-                    description = "Modern Android operating systems (Android 10+) strictly forbid third-party apps from opening the camera silently from background receivers or services. LockGuard complies with official platform policies by logging screen-unlock events and capturing immediate intruder photos inside its foreground protected vault.",
+                    description = "Modern Android blocks silent camera use from receivers while the phone is locked. LockGuard logs the failed unlock attempt immediately, then captures the photo only from a visible Capture screen launched via the security notification or right after unlock — never via hidden APIs.",
                     icon = Icons.Rounded.CameraAlt,
                     accentColor = StatusGreen
                 )

@@ -7,6 +7,7 @@ import com.lockguard.app.data.database.IntruderDao
 import com.lockguard.app.data.database.IntruderEventEntity
 import com.lockguard.app.domain.model.DetectionSource
 import com.lockguard.app.service.NotificationHelper
+import com.lockguard.app.ui.capture.IntruderCaptureActivity
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -28,19 +29,14 @@ import kotlinx.coroutines.launch
  *    the user's actual lock-screen PIN, pattern, or password. Android's API only transmits
  *    a binary signal that an incorrect attempt took place.
  *
- * 3. Modern Android Background Execution Compliance (Android 10, 11, 12, 13, 14, 15):
- *    Starting with Android 10, background services and broadcast receivers are strictly
- *    prohibited by Google Play and Android OS security policies from accessing the camera
- *    hardware without an active user-visible foreground activity or compliant foreground
- *    service type. Attempting to secretly open the camera from a broadcast receiver violates
- *    Android security boundaries and causes immediate system termination or SecurityException.
- *
- *    Compliant Strategy:
- *    - Records the timestamp and system-level failed attempt count immediately.
- *    - Fires a discreet high-priority security alert notification.
- *    - For instantaneous front-camera intruder photography, LockGuard provides its
- *      "In-App Vault Protection Mode" which operates legitimately within the foreground
- *      Compose lifecycle.
+ * 3. Modern Android Background Execution Compliance (Android 10+):
+ *    Broadcast receivers MUST NOT open the camera in the background. LockGuard therefore:
+ *    - Immediately logs the failed attempt metadata.
+ *    - Posts a high-priority notification with a full-screen / action PendingIntent to
+ *      [IntruderCaptureActivity], which is a visible foreground Activity where CameraX
+ *      is allowed to run.
+ *    - Relies on [UnlockCaptureReceiver] (USER_PRESENT) as a compliant fallback if
+ *      capture could not complete while the device remained locked.
  */
 class LockGuardDeviceAdminReceiver : DeviceAdminReceiver() {
 
@@ -54,7 +50,6 @@ class LockGuardDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onPasswordFailed(context: Context, intent: Intent) {
         super.onPasswordFailed(context, intent)
 
-        // Asynchronously record the system-level failed authentication event
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
             ReceiverEntryPoint::class.java
@@ -69,15 +64,29 @@ class LockGuardDeviceAdminReceiver : DeviceAdminReceiver() {
                 val entity = IntruderEventEntity(
                     timestamp = System.currentTimeMillis(),
                     attemptNumber = currentAttempts + 1,
-                    photoPath = null, // System lock-screen event; camera access governed by foreground policy
+                    photoPath = null,
                     source = DetectionSource.SYSTEM_LOCK_SCREEN,
-                    notes = "Incorrect PIN/pattern entered on Android system lock screen.",
+                    notes = "Incorrect PIN/pattern on Android lock screen. Waiting for foreground CameraX capture.",
                     isEncrypted = false
                 )
-                intruderDao.insert(entity)
+                val eventId = intruderDao.insert(entity)
 
-                // Dispatch privacy-compliant notification
-                notificationHelper.showIntruderAlertNotification()
+                // Discreet alert that can open the foreground capture Activity.
+                notificationHelper.showIntruderAlertNotification(eventId)
+
+                // Best-effort: also try launching the capture Activity directly.
+                // On Android 10+ this may be blocked until the notification full-screen
+                // intent or USER_PRESENT unlock path runs — that is expected and compliant.
+                try {
+                    val captureIntent = Intent(context, IntruderCaptureActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra(IntruderCaptureActivity.EXTRA_EVENT_ID, eventId)
+                    }
+                    context.startActivity(captureIntent)
+                } catch (e: Exception) {
+                    // Background activity launch blocked — notification / unlock path will handle it.
+                    e.printStackTrace()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -86,7 +95,6 @@ class LockGuardDeviceAdminReceiver : DeviceAdminReceiver() {
 
     override fun onPasswordSucceeded(context: Context, intent: Intent) {
         super.onPasswordSucceeded(context, intent)
-        // Legitimate user unlocked device; no adverse action needed
     }
 
     override fun onEnabled(context: Context, intent: Intent) {

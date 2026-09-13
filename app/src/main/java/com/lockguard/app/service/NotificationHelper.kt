@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.lockguard.app.MainActivity
 import com.lockguard.app.R
+import com.lockguard.app.ui.capture.IntruderCaptureActivity
 
 /**
  * Handles security alert notifications.
@@ -17,7 +18,7 @@ import com.lockguard.app.R
  * Privacy Guarantees:
  * - Notification text is discreet: "Security alert: An unauthorized authentication attempt was detected."
  * - Intruder photo is NEVER displayed on the notification or lock screen shade.
- * - Tapping notification prompts for LockGuard App PIN / Biometric verification before granting access.
+ * - Full-screen / action intents open the foreground Capture Activity so CameraX can run legally.
  */
 class NotificationHelper(private val context: Context) {
 
@@ -39,6 +40,7 @@ class NotificationHelper(private val context: Context) {
                 description = descriptionText
                 enableVibration(true)
                 setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PRIVATE
             }
 
             val notificationManager =
@@ -48,18 +50,31 @@ class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Issues a privacy-compliant discreet security notification.
+     * Issues a privacy-compliant security notification that can open the foreground
+     * capture screen (full-screen intent + explicit action button).
      */
-    fun showIntruderAlertNotification() {
-        val intent = Intent(context, MainActivity::class.java).apply {
+    fun showIntruderAlertNotification(eventId: Long? = null) {
+        val galleryIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("navigate_to", "gallery")
         }
-
-        val pendingIntent = PendingIntent.getActivity(
+        val galleryPending = PendingIntent.getActivity(
             context,
-            0,
-            intent,
+            1,
+            galleryIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val captureIntent = Intent(context, IntruderCaptureActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (eventId != null) {
+                putExtra(IntruderCaptureActivity.EXTRA_EVENT_ID, eventId)
+            }
+        }
+        val capturePending = PendingIntent.getActivity(
+            context,
+            2,
+            captureIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -69,11 +84,17 @@ class NotificationHelper(private val context: Context) {
             .setContentText(context.getString(R.string.notification_alert_body))
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText(context.getString(R.string.notification_alert_body))
+                    .bigText(context.getString(R.string.notification_alert_body_extended))
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(galleryPending)
+            .setFullScreenIntent(capturePending, true)
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                context.getString(R.string.notification_capture_action),
+                capturePending
+            )
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .build()
@@ -81,7 +102,6 @@ class NotificationHelper(private val context: Context) {
         try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
         } catch (e: SecurityException) {
-            // Android 13+ POST_NOTIFICATIONS permission might be revoked
             e.printStackTrace()
         }
     }

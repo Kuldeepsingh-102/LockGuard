@@ -222,13 +222,13 @@ fun PhotoDetailScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "System Lock Screen Detection",
+                                text = "Photo pending / Android restriction",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Color.White
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Photo was not captured due to Android OS background camera restrictions.",
+                                text = "Android blocks silent camera use while the phone is locked. LockGuard logged this attempt. Tap the security notification action \"Capture photo\", or unlock the device so LockGuard can finish foreground CameraX capture.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center

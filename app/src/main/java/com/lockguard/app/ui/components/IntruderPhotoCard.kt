@@ -141,7 +141,7 @@ fun IntruderPhotoCard(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (event.source == DetectionSource.SYSTEM_LOCK_SCREEN) "Lock Screen Alert" else "No Photo",
+                            text = if (event.source == DetectionSource.SYSTEM_LOCK_SCREEN) "Pending photo" else "No Photo",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

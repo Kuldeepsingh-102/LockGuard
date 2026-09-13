@@ -18,6 +18,9 @@
         android:name="android.permission.USE_FINGERPRINT"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Allows high-priority full-screen intent to open Capture Activity after lock-screen failures -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".LockGuardApp"
@@ -43,6 +46,21 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Foreground CameraX capture only. showWhenLocked / turnScreenOn enable the
+            official full-screen notification path; camera still cannot run secretly
+            from a background receiver.
+        -->
+        <activity
+            android:name=".ui.capture.IntruderCaptureActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.LockGuard.Capture"
+            android:turnScreenOn="true" />
+
         <!-- Official Android Device Administration Receiver for lock screen attempt tracking -->
         <receiver
             android:name=".receiver.LockGuardDeviceAdminReceiver"
@@ -59,6 +77,15 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
                 <action android:name="android.app.action.ACTION_PASSWORD_FAILED" />
                 <action android:name="android.app.action.ACTION_PASSWORD_SUCCEEDED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- After unlock, complete any pending lock-screen captures that still lack photos -->
+        <receiver
+            android:name=".receiver.UnlockCaptureReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
         </receiver>
 

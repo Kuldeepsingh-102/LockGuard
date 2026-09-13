@@ -50,4 +50,32 @@ interface IntruderDao {
 
     @Query("SELECT photoPath FROM intruder_events WHERE photoPath IS NOT NULL")
     suspend fun getAllPhotoPaths(): List<String>
+
+    @Query(
+        """
+        UPDATE intruder_events
+        SET photoPath = :photoPath, isEncrypted = :isEncrypted, notes = :notes
+        WHERE id = :id
+        """
+    )
+    suspend fun attachPhoto(id: Long, photoPath: String, isEncrypted: Boolean, notes: String?)
+
+    /**
+     * Pending system lock-screen events that still need a foreground CameraX capture.
+     */
+    @Query(
+        """
+        SELECT * FROM intruder_events
+        WHERE photoPath IS NULL
+          AND source = :source
+          AND timestamp >= :sinceTimestamp
+        ORDER BY timestamp DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun getPendingSystemCaptures(
+        source: String,
+        sinceTimestamp: Long,
+        limit: Int = 3
+    ): List<IntruderEventEntity>
 }

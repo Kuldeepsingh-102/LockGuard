@@ -5,4 +5,10 @@
         <item name="android:navigationBarColor">@color/navy_950</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <style name="Theme.LockGuard.Capture" parent="Theme.LockGuard">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowBackground">@color/navy_950</item>
+    </style>
 </resources>
