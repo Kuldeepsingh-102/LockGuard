@@ -228,7 +228,7 @@ fun PhotoDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Android blocks silent camera use while the phone is locked. LockGuard logged this attempt. Tap the security notification action \"Capture photo\", or unlock the device so LockGuard can finish foreground CameraX capture.",
+                                text = "Android blocks silent camera while locked. LockGuard shows a brief Wrong PIN screen (or Continue from notification) so CameraX can capture in the foreground.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center

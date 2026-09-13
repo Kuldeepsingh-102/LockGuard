@@ -94,7 +94,7 @@ class AppLockViewModel @Inject constructor(
 
                     _uiState.value = _uiState.value.copy(
                         enteredPin = "",
-                        errorMessage = "Incorrect PIN. Intruder capture triggered."
+                        errorMessage = "Wrong PIN. Try again."
                     )
                 }
             }
