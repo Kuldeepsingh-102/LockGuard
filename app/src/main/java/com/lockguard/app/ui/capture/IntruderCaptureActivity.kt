@@ -6,15 +6,20 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,29 +31,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lockguard.app.data.camera.CameraCaptureManager
 import com.lockguard.app.data.database.IntruderDao
 import com.lockguard.app.domain.model.DetectionSource
-import com.lockguard.app.ui.theme.ElectricBlue
 import com.lockguard.app.ui.theme.LockGuardTheme
-import com.lockguard.app.ui.theme.Navy950
-import com.lockguard.app.ui.theme.StatusGreen
+import com.lockguard.app.ui.theme.StatusRed
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 /**
- * Foreground-only CameraX capture screen.
+ * Foreground CameraX capture with a discreet "Wrong PIN" style UI.
  *
- * Android compliance:
- * - Camera is opened only while this visible Activity is in the foreground.
- * - No silent/background camera from DeviceAdminReceiver.
- * - May appear over the lock screen via showWhenLocked when launched from a
- *   high-priority full-screen notification intent (official Alarm-category path).
- * - If the OS still blocks camera while locked, capture retries after unlock
- *   via [com.lockguard.app.receiver.UnlockCaptureReceiver].
+ * Android still requires a visible Activity to open the camera. This screen
+ * intentionally looks like a normal authentication error popup (no camera preview,
+ * no "capturing photo" wording) so the attempt feels like a failed unlock message
+ * while evidence is secured in the foreground.
  */
 @AndroidEntryPoint
 class IntruderCaptureActivity : ComponentActivity() {
@@ -78,7 +80,7 @@ class IntruderCaptureActivity : ComponentActivity() {
 
         setContent {
             LockGuardTheme {
-                CaptureUi(
+                WrongPinCaptureUi(
                     onCapture = { captureAndAttach(eventId) },
                     onDone = { finish() }
                 )
@@ -86,17 +88,14 @@ class IntruderCaptureActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun captureAndAttach(eventId: Long): CaptureResult {
+    private suspend fun captureAndAttach(eventId: Long): Boolean {
         if (!cameraCaptureManager.hasCameraPermission()) {
-            return CaptureResult.Failed(
-                "Camera permission is required. Open LockGuard Settings and grant Camera access."
-            )
+            return false
         }
 
         val targetId = if (eventId > 0) {
             eventId
         } else {
-            // Fallback: attach to newest pending system lock-screen event (last 15 minutes)
             val since = System.currentTimeMillis() - 15 * 60 * 1000L
             intruderDao.getPendingSystemCaptures(
                 source = DetectionSource.SYSTEM_LOCK_SCREEN.name,
@@ -106,12 +105,12 @@ class IntruderCaptureActivity : ComponentActivity() {
         }
 
         if (targetId == null || targetId <= 0) {
-            return CaptureResult.Failed("No pending lock-screen event found to attach a photo.")
+            return false
         }
 
         val existing = intruderDao.getEventById(targetId)
         if (existing?.photoPath != null) {
-            return CaptureResult.Success("Evidence already secured for this attempt.")
+            return true
         }
 
         val capture = cameraCaptureManager.captureIntruderPhoto(this)
@@ -121,15 +120,11 @@ class IntruderCaptureActivity : ComponentActivity() {
                 id = targetId,
                 photoPath = path,
                 isEncrypted = true,
-                notes = "Incorrect PIN/pattern on Android lock screen. Photo captured in foreground Capture Activity (CameraX)."
+                notes = "Incorrect PIN/pattern on Android lock screen. Photo captured during discreet Wrong PIN foreground screen."
             )
-            CaptureResult.Success("Intruder photo encrypted and saved.")
+            true
         } else {
-            val reason = capture.exceptionOrNull()?.localizedMessage
-                ?: "Camera unavailable while device is locked."
-            CaptureResult.Failed(
-                "Could not capture yet: $reason. Unlock the phone or tap the security notification to retry."
-            )
+            false
         }
     }
 
@@ -138,72 +133,64 @@ class IntruderCaptureActivity : ComponentActivity() {
     }
 }
 
-private sealed class CaptureResult {
-    data class Success(val message: String) : CaptureResult()
-    data class Failed(val message: String) : CaptureResult()
-}
-
+/**
+ * Looks like a system "Wrong PIN / Try again" dialog.
+ * Camera runs with no preview; screen auto-dismisses quickly.
+ */
 @Composable
-private fun CaptureUi(
-    onCapture: suspend () -> CaptureResult,
+private fun WrongPinCaptureUi(
+    onCapture: suspend () -> Boolean,
     onDone: () -> Unit
 ) {
-    var status by remember { mutableStateOf("Securing evidence…") }
-    var isWorking by remember { mutableStateOf(true) }
-    var isSuccess by remember { mutableStateOf(false) }
+    var subtitle by remember { mutableStateOf("Try again") }
 
     LaunchedEffect(Unit) {
-        val result = onCapture()
-        when (result) {
-            is CaptureResult.Success -> {
-                status = result.message
-                isSuccess = true
-            }
-            is CaptureResult.Failed -> {
-                status = result.message
-                isSuccess = false
-            }
+        // Start capture immediately while showing Wrong PIN UI (no camera preview).
+        val ok = onCapture()
+        if (!ok) {
+            subtitle = "Try again"
         }
-        isWorking = false
-        delay(1800)
+        // Brief pause so the popup feels like a normal unlock error flash.
+        delay(1100)
         onDone()
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Navy950)
-            .padding(24.dp),
+            .background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 36.dp)
+                .background(Color(0xFF1C1C1E), RoundedCornerShape(18.dp))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+                .padding(horizontal = 22.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            if (isWorking) {
-                CircularProgressIndicator(
-                    color = ElectricBlue,
-                    modifier = Modifier.size(42.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(20.dp))
+            Icon(
+                imageVector = Icons.Rounded.Lock,
+                contentDescription = null,
+                tint = StatusRed,
+                modifier = Modifier.size(36.dp)
+            )
+            Spacer(modifier = Modifier.height(14.dp))
             Text(
-                text = if (isWorking) {
-                    "Capturing front-camera evidence"
-                } else if (isSuccess) {
-                    "Evidence secured"
-                } else {
-                    "Capture pending"
-                },
-                style = MaterialTheme.typography.titleMedium,
-                color = if (isSuccess) StatusGreen else Color.White,
+                text = "Wrong PIN",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = status,
+                text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.75f),
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 15.sp,
                 textAlign = TextAlign.Center
             )
         }

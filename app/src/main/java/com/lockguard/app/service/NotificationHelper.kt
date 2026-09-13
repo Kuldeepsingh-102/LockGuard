@@ -16,9 +16,10 @@ import com.lockguard.app.ui.capture.IntruderCaptureActivity
  * Handles security alert notifications.
  *
  * Privacy Guarantees:
- * - Notification text is discreet: "Security alert: An unauthorized authentication attempt was detected."
+ * - Notification copy is discreet ("Wrong PIN" / "Try again") — no photo, no camera wording.
  * - Intruder photo is NEVER displayed on the notification or lock screen shade.
- * - Full-screen / action intents open the foreground Capture Activity so CameraX can run legally.
+ * - Full-screen / action intents open the discreet Wrong-PIN Capture Activity so CameraX
+ *   can run legally in the foreground (Android still requires a visible Activity).
  */
 class NotificationHelper(private val context: Context) {
 
